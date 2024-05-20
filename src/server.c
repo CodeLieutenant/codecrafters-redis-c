@@ -5,12 +5,25 @@
 typedef struct sockaddr_in sockaddr_in_t;
 typedef struct sockaddr sockaddr_t;
 
-void signal_handler(uv_signal_t *handle, int signum);
+void on_signal_handler(uv_signal_t *handle, int signum);
+void on_uv_close(uv_handle_t *handle);
+void on_uv_walk(uv_handle_t *handle, void *arg);
 
 void print_on_timer(uv_timer_t *handle)
 {
     UNUSED(handle);
     printf("Hello world\n");
+}
+
+void cleanup(uv_loop_t *loop)
+{
+    uv_stop(loop);
+    if (uv_loop_close(loop) == UV_EBUSY)
+    {
+        uv_walk(loop, on_uv_walk, NULL);
+    }
+
+    free(loop);
 }
 
 int main(void)
@@ -19,7 +32,7 @@ int main(void)
 
     pid_t current_pid = getpid();
 
-    printf("Current PID: %d\n", current_pid);
+    printf("Current PID: %d, MiMalloc Version: %d\n", current_pid, mi_version());
 
     uv_loop_t *loop = malloc(sizeof(uv_loop_t));
 
@@ -34,8 +47,8 @@ int main(void)
 
     uv_signal_init(loop, &sigterm);
     uv_signal_init(loop, &sigint);
-    uv_signal_start(&sigterm, signal_handler, SIGTERM);
-    uv_signal_start(&sigint, signal_handler, SIGINT);
+    uv_signal_start(&sigterm, on_signal_handler, SIGTERM);
+    uv_signal_start(&sigint, on_signal_handler, SIGINT);
 
     uv_timer_t timer_req;
     if (uv_timer_init(loop, &timer_req) != 0)
@@ -59,7 +72,7 @@ int main(void)
         return 1;
     }
 
-    free(loop);
+    cleanup(loop);
 }
 
 void on_uv_close(uv_handle_t *handle)
@@ -86,7 +99,7 @@ void on_uv_walk(uv_handle_t *handle, void *arg)
     uv_close(handle, on_uv_close);
 }
 
-void signal_handler(uv_signal_t *handle, int signum)
+void on_signal_handler(uv_signal_t *handle, int signum)
 {
     UNUSED(signum);
     if (uv_signal_stop(handle) != 0)
@@ -94,11 +107,8 @@ void signal_handler(uv_signal_t *handle, int signum)
         printf("Signal stop failed: %s \n", strerror(errno));
         exit(1);
     }
-    uv_stop(handle->loop);
-    if (uv_loop_close(handle->loop) == UV_EBUSY)
-    {
-        uv_walk(handle->loop, on_uv_walk, NULL);
-    }
+
+    cleanup(handle->loop);
 
     printf("Exiting....\n");
 }

@@ -17,6 +17,7 @@
         "types.h": "c",
         "pch.h": "c",
         "config.h": "c",
-        "signal.h": "c"
+        "signal.h": "c",
+        "mimalloc-override.h": "c"
     }
 }

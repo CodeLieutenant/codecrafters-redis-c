@@ -50,6 +50,10 @@
 #error "Missing netinet/ip.h"
 #endif
 
+#include <mimalloc.h>
+
+#include <mimalloc-override.h>
+
 #include <uv.h>
 
 #define UNUSED(x) (void)(x)

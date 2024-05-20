@@ -5,7 +5,7 @@
     "libuv",
     {
       "name": "mimalloc",
-      "features": ["asm", "override"]
+      "features": ["asm"]
     }
   ]
 }
