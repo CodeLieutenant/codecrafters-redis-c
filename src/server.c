@@ -17,13 +17,11 @@ void print_on_timer(uv_timer_t *handle)
 
 void cleanup(uv_loop_t *loop)
 {
-    uv_stop(loop);
     if (uv_loop_close(loop) == UV_EBUSY)
     {
+        uv_stop(loop);
         uv_walk(loop, on_uv_walk, NULL);
     }
-
-    free(loop);
 }
 
 int main(void)
@@ -73,6 +71,7 @@ int main(void)
     }
 
     cleanup(loop);
+    free(loop);
 }
 
 void on_uv_close(uv_handle_t *handle)
