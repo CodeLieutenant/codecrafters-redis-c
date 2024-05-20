@@ -8,10 +8,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
 include(CheckIncludeFile)
 include(CheckIPOSupported)
 
-if(NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
-    set(CMAKE_BUILD_TYPE "Debug")
-endif()
-
 check_include_file("stdio.h" HAVE_STDIO_H)
 check_include_file("stdint.h" HAVE_STDINT_H)
 check_include_file("stdlib.h" HAVE_STDLIB_H)
