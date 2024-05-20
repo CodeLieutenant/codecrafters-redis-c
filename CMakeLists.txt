@@ -38,7 +38,7 @@ target_include_directories(server PRIVATE include "${PROJECT_BINARY_DIR}")
 target_link_libraries(server PRIVATE $<IF:$<TARGET_EXISTS:libuv::uv_a>,libuv::uv_a,libuv::uv>)
 target_link_libraries(server PRIVATE $<IF:$<TARGET_EXISTS:mimalloc-static>,mimalloc-static,mimalloc>)
 target_link_libraries(server PRIVATE Threads::Threads)
-target_compile_options(server PRIVATE -Werror -Wextra -Wpedantic)
+target_compile_options(server PRIVATE -Werror -Wextra -Wpedantic -Wno-gnu-zero-variadic-macro-arguments)
 
 if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
     target_compile_options(server PRIVATE -O0 -g -ggdb -g3 -gdwarf-4 -fcolor-diagnostics -fansi-escape-codes)
