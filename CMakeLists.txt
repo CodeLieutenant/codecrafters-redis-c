@@ -29,8 +29,10 @@ add_executable(server)
 target_sources(server PRIVATE src/server.c config.h)
 target_include_directories(server PRIVATE include "${PROJECT_BINARY_DIR}")
 
+target_compile_options(server PRIVATE -Werror -Wextra -Wpedantic)
+
 if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
-    target_compile_options(server PRIVATE -O0 -g -ggdb -g3 -gdwarf-4 -Wpedantic -fcolor-diagnostics -fansi-escape-codes)
+    target_compile_options(server PRIVATE -O0 -g -ggdb -g3 -gdwarf-4 -fcolor-diagnostics -fansi-escape-codes)
 else()
     check_ipo_supported(RESULT LTO_SUPPORTED)
 
