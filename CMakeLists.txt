@@ -18,13 +18,21 @@ check_include_file("sys/socket.h" HAVE_SYS_SOCKET_H)
 check_include_file("sys/types.h" HAVE_SYS_TYPES_H)
 check_include_file("string.h" HAVE_STRING_H)
 check_include_file("unistd.h" HAVE_UNISTD_H)
+check_include_file("netinet/in.h" HAVE_NETINET_IN_H)
+check_include_file("netinet/ip.h" HAVE_NETINET_IP_H)
+
+find_package(libuv CONFIG REQUIRED)
+find_package(mimalloc CONFIG REQUIRED)
 
 configure_file(config.in config.h USE_SOURCE_PERMISSIONS NEWLINE_STYLE UNIX)
 
 add_executable(server)
 target_sources(server PRIVATE src/server.c config.h)
+target_precompile_headers(server PRIVATE include/pch.h)
 target_include_directories(server PRIVATE include "${PROJECT_BINARY_DIR}")
 
+target_link_libraries(server PRIVATE $<IF:$<TARGET_EXISTS:libuv::uv_a>,libuv::uv_a,libuv::uv>)
+target_link_libraries(server PRIVATE $<IF:$<TARGET_EXISTS:mimalloc-static>,mimalloc-static,mimalloc>)
 target_compile_options(server PRIVATE -Werror -Wextra -Wpedantic)
 
 if(${CMAKE_BUILD_TYPE} MATCHES "Debug")

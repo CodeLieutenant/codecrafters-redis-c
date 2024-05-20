@@ -1,4 +1,11 @@
 {
   "name": "redis-starter-c",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "dependencies": [
+    "libuv",
+    {
+      "name": "mimalloc",
+      "features": ["asm", "override"]
+    }
+  ]
 }

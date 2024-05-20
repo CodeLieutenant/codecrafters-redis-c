@@ -14,6 +14,9 @@
     "files.associations": {
         "*main.yml": "ansible",
         "php_driver.h": "c",
-        "types.h": "c"
+        "types.h": "c",
+        "pch.h": "c",
+        "config.h": "c",
+        "signal.h": "c"
     }
 }

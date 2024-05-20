@@ -1,92 +1,104 @@
-#include <netinet/in.h>
-#include <netinet/ip.h>
+#include <pch.h>
 
-#include <config.h>
-
-#ifdef HAVE_STDIO_H
-#include <stdio.h>
-#else
-#error "Missing stdio.h"
-#endif
-
-#ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#else
-#error "Missing stdlib.h"
-#endif
-
-#ifdef HAVE_STRING_H
-#include <string.h>
-#else
-#error "Missing string.h"
-#endif
-
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#else
-#error "Missing sys/socket.h"
-#endif
-
-#ifdef HAVE_ERRNO_H
-#include <errno.h>
-#else
-#error "Missing errno.h"
-#endif
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#else
-#error "Missing unistd.h"
-#endif
+#include <signal.h>
 
 typedef struct sockaddr_in sockaddr_in_t;
 typedef struct sockaddr sockaddr_t;
 
-int main()
+void signal_handler(uv_signal_t *handle, int signum);
+
+void print_on_timer(uv_timer_t *handle)
+{
+    UNUSED(handle);
+    printf("Hello world\n");
+}
+
+int main(void)
 {
     setbuf(stdout, NULL);
 
-    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_fd == -1)
+    pid_t current_pid = getpid();
+
+    printf("Current PID: %d\n", current_pid);
+
+    uv_loop_t *loop = malloc(sizeof(uv_loop_t));
+
+    if (uv_loop_init(loop) != 0)
     {
-        printf("Socket creation failed: %s...\n", strerror(errno));
+        printf("Loop init failed: %s \n", strerror(errno));
+        free(loop);
         return 1;
     }
 
-    int reuse = 1;
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse)) < 0)
+    uv_signal_t sigterm, sigint;
+
+    uv_signal_init(loop, &sigterm);
+    uv_signal_init(loop, &sigint);
+    uv_signal_start(&sigterm, signal_handler, SIGTERM);
+    uv_signal_start(&sigint, signal_handler, SIGINT);
+
+    uv_timer_t timer_req;
+    if (uv_timer_init(loop, &timer_req) != 0)
     {
-        printf("SO_REUSEPORT failed: %s \n", strerror(errno));
+        printf("Timer init failed: %s \n", strerror(errno));
+        free(loop);
         return 1;
     }
 
-    sockaddr_in_t serv_addr = {
-        .sin_family = AF_INET,
-        .sin_port = htons(6379),
-        .sin_addr = {htonl(INADDR_ANY)},
-    };
-
-    if (bind(server_fd, (sockaddr_t *)&serv_addr, sizeof(serv_addr)) != 0)
+    if (uv_timer_start(&timer_req, print_on_timer, 1000, 1000) != 0)
     {
-        printf("Bind failed: %s \n", strerror(errno));
+        printf("Timer start failed: %s \n", strerror(errno));
+        free(loop);
         return 1;
     }
 
-    int connection_backlog = 5;
-    if (listen(server_fd, connection_backlog) != 0)
+    if (uv_run(loop, UV_RUN_DEFAULT) != 0)
     {
-        printf("Listen failed: %s \n", strerror(errno));
+        printf("Loop run failed: %s \n", strerror(errno));
+        free(loop);
         return 1;
     }
 
-    printf("Waiting for a client to connect...\n");
-    sockaddr_in_t client_addr;
-    size_t client_addr_len = sizeof(client_addr);
+    free(loop);
+}
 
-    accept(server_fd, (sockaddr_t *)&client_addr, (socklen_t *)&client_addr_len);
-    printf("Client connected\n");
+void on_uv_close(uv_handle_t *handle)
+{
+    switch (handle->type)
+    {
+    case UV_TIMER:
+        uv_timer_stop((uv_timer_t *)handle);
+        printf("Timer closed\n");
+        break;
+    case UV_SIGNAL:
+        uv_signal_stop((uv_signal_t *)handle);
+        printf("Signal closed\n");
+        break;
+    default:
+        printf("Unknown handle type: %d\n", handle->type);
+        break;
+    }
+}
 
-    close(server_fd);
+void on_uv_walk(uv_handle_t *handle, void *arg)
+{
+    UNUSED(arg);
+    uv_close(handle, on_uv_close);
+}
 
-    return 0;
+void signal_handler(uv_signal_t *handle, int signum)
+{
+    UNUSED(signum);
+    if (uv_signal_stop(handle) != 0)
+    {
+        printf("Signal stop failed: %s \n", strerror(errno));
+        exit(1);
+    }
+    uv_stop(handle->loop);
+    if (uv_loop_close(handle->loop) == UV_EBUSY)
+    {
+        uv_walk(handle->loop, on_uv_walk, NULL);
+    }
+
+    printf("Exiting....\n");
 }
