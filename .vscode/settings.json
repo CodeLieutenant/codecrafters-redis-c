@@ -1,0 +1,19 @@
+{
+    "cmake.buildDirectory": "${workspaceFolder}/build/Debug",
+    "cmake.allowCommentsInPresetsFile": true,
+    "cmake.buildTask": true,
+    "cmake.configureEnvironment": {
+        "CMAKE_BUILD_TYPE": "Debug",
+    },
+    "cmake.configureSettings": {},
+    "cmake.generator": "Ninja",
+    "cmake.loggingLevel": "debug",
+    "cmake.configureArgs": [],
+    "cmake.sourceDirectory": "${workspaceFolder}/.",
+    "cmake.configureOnOpen": true,
+    "files.associations": {
+        "*main.yml": "ansible",
+        "php_driver.h": "c",
+        "types.h": "c"
+    }
+}

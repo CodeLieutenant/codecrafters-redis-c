@@ -6,6 +6,7 @@
 #
 # DON'T EDIT THIS!
 set -e
-tmpFile=$(mktemp)
-gcc app/*.c -o $tmpFile
-exec $tmpFile
+cmake --preset ReleaseCodecrafters
+cmake --build build/ReleaseCodecrafters
+
+exec ./build/ReleaseCodecrafters/server "$@"
