@@ -1,6 +1,6 @@
-[![progress-banner](https://backend.codecrafters.io/progress/redis/df280783-32f1-4462-9c38-fd83f8b3ea4c)](https://app.codecrafters.io/users/malusev998?r=2qF)
+[![progress-banner](https://backend.codecrafters.io/progress/redis/fcf48cdd-dcea-492e-9798-1fbc2205f6f2)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
 
-This is a starting point for C solutions to the
+This is a starting point for C++ solutions to the
 ["Build Your Own Redis" Challenge](https://codecrafters.io/challenges/redis).
 
 In this challenge, you'll build a toy Redis clone that's capable of handling
@@ -27,8 +27,9 @@ That's all!
 
 Note: This section is for stages 2 and beyond.
 
-1. Ensure you have `gcc` installed locally
+1. Ensure you have `cmake` installed locally
 1. Run `./spawn_redis_server.sh` to run your Redis server, which is implemented
-   in `app/server.c`.
+   in `src/Server.cpp`.
+
 1. Commit your changes and run `git push origin master` to submit your solution
    to CodeCrafters. Test output will be streamed to your terminal.

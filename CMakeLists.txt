@@ -2,8 +2,10 @@ cmake_minimum_required(VERSION 3.14)
 
 project(CodeCraftersRedis LANGUAGES C CXX)
 
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 23)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
+set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 include(CheckIncludeFile)
 include(CheckIPOSupported)
@@ -24,6 +26,8 @@ check_include_file("netinet/ip.h" HAVE_NETINET_IP_H)
 find_package(libuv CONFIG REQUIRED)
 find_package(mimalloc CONFIG REQUIRED)
 
+find_package(Threads REQUIRED)
+
 configure_file(config.in config.h USE_SOURCE_PERMISSIONS NEWLINE_STYLE UNIX)
 
 add_executable(server)
@@ -33,6 +37,7 @@ target_include_directories(server PRIVATE include "${PROJECT_BINARY_DIR}")
 
 target_link_libraries(server PRIVATE $<IF:$<TARGET_EXISTS:libuv::uv_a>,libuv::uv_a,libuv::uv>)
 target_link_libraries(server PRIVATE $<IF:$<TARGET_EXISTS:mimalloc-static>,mimalloc-static,mimalloc>)
+target_link_libraries(server PRIVATE Threads::Threads)
 target_compile_options(server PRIVATE -Werror -Wextra -Wpedantic)
 
 if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
