@@ -70,7 +70,7 @@ static void on_client_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *b
     write_req = malloc(sizeof(uv_write_t));
 
     write_buf.base = (char *)"+PONG\r\n";
-    write_buf.len = sizeof("+PONG\r\n");
+    write_buf.len = sizeof("+PONG\r\n") - 1;
 
     HANDLE_UV_ERROR(uv_write(write_req, stream, &write_buf, 1, NULL), "Failed to write to client");
 
