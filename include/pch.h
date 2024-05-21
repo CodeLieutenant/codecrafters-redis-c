@@ -57,3 +57,15 @@
 #include <uv.h>
 
 #define UNUSED(x) (void)(x)
+
+#define HANDLE_UV_ERROR(status, message, ...)                                                                          \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        int __status = (status);                                                                                       \
+        if ((__status) < 0)                                                                                            \
+        {                                                                                                              \
+            fprintf(stderr, message "  UV error: %s (%s)\n", ##__VA_ARGS__, uv_err_name((__status)),                   \
+                    uv_strerror((__status)));                                                                          \
+            goto error;                                                                                                \
+        }                                                                                                              \
+    } while (0)

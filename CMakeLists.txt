@@ -31,14 +31,15 @@ find_package(Threads REQUIRED)
 configure_file(config.in config.h USE_SOURCE_PERMISSIONS NEWLINE_STYLE UNIX)
 
 add_executable(server)
-target_sources(server PRIVATE src/server.c config.h)
+target_sources(server PRIVATE src/server.c src/tcp.c config.h)
 target_precompile_headers(server PRIVATE include/pch.h)
 target_include_directories(server PRIVATE include "${PROJECT_BINARY_DIR}")
 
 target_link_libraries(server PRIVATE $<IF:$<TARGET_EXISTS:libuv::uv_a>,libuv::uv_a,libuv::uv>)
 target_link_libraries(server PRIVATE $<IF:$<TARGET_EXISTS:mimalloc-static>,mimalloc-static,mimalloc>)
 target_link_libraries(server PRIVATE Threads::Threads)
-target_compile_options(server PRIVATE -Werror -Wextra -Wpedantic -Wno-gnu-zero-variadic-macro-arguments)
+target_compile_options(server PRIVATE -Wshadow -Werror -Wextra -Wall -pedantic -Wno-gnu-zero-variadic-macro-arguments -Wno-long-long -Wno-overlength-strings -Wno-format-nonliteral -Wcast-align -Wwrite-strings -Wstrict-prototypes -Wold-style-definition -Wredundant-decls -Wnested-externs -Wmissing-include-dirs -Wswitch-default
+)
 
 if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
     target_compile_options(server PRIVATE -O0 -g -ggdb -g3 -gdwarf-4 -fcolor-diagnostics -fansi-escape-codes)
@@ -49,4 +50,6 @@ else()
         message(STATUS "LTO is supported and enabled")
         set_property(TARGET ${target} PROPERTY INTERPROCEDURAL_OPTIMIZATION ON)
     endif()
+
+    target_compile_options(server PRIVATE -O3)
 endif()

@@ -1,31 +1,15 @@
 #include <pch.h>
+#include <tcp.h>
 
 #include <signal.h>
 
 #define REDIS_DEFAULT_HOST "0.0.0.0"
 #define REDIS_DEFAULT_PORT 6379
 
-#define HANDLE_UV_ERROR(status, message, ...)                                                                          \
-    do                                                                                                                 \
-    {                                                                                                                  \
-        int __status = (status);                                                                                       \
-        if ((__status) < 0)                                                                                            \
-        {                                                                                                              \
-            fprintf(stderr, message "  UV error: %s (%s)\n", ##__VA_ARGS__, uv_err_name((__status)),                   \
-                    uv_strerror((__status)));                                                                          \
-            goto error;                                                                                                \
-        }                                                                                                              \
-    } while (0)
+static void on_signal_handler(uv_signal_t *handle, int signum);
+static void on_uv_walk(uv_handle_t *handle, void *arg);
 
-typedef struct sockaddr_in sockaddr_in_t;
-typedef struct sockaddr sockaddr_t;
-
-void on_signal_handler(uv_signal_t *handle, int signum);
-void on_uv_close(uv_handle_t *handle);
-void on_uv_walk(uv_handle_t *handle, void *arg);
-void on_new_connection(uv_stream_t *server, int status);
-
-void cleanup(uv_loop_t *loop)
+static void cleanup(uv_loop_t *loop)
 {
     if (uv_loop_close(loop) == UV_EBUSY)
     {
@@ -52,18 +36,12 @@ int main(void)
     HANDLE_UV_ERROR(uv_signal_start(&sigterm, on_signal_handler, SIGTERM), "Signal start failed SIGNAL(%d)", SIGTERM);
     HANDLE_UV_ERROR(uv_signal_start(&sigint, on_signal_handler, SIGINT), "Signal start failed SIGNAL(%d)", SIGINT);
 
-    uv_tcp_t server;
-    HANDLE_UV_ERROR(uv_tcp_init(loop, &server), "Server init failed");
+    if (start_tcp_server(loop, REDIS_DEFAULT_HOST, REDIS_DEFAULT_PORT) != 0)
+    {
+        fprintf(stderr, "Failed to start TCP Server");
+        goto error;
+    }
 
-    sockaddr_in_t addr;
-    HANDLE_UV_ERROR(uv_ip4_addr(REDIS_DEFAULT_HOST, REDIS_DEFAULT_PORT, &addr), "Failed to parse address %s:%d",
-                    REDIS_DEFAULT_HOST, REDIS_DEFAULT_PORT);
-    HANDLE_UV_ERROR(uv_tcp_nodelay(&server, 1), "Failed to set TCP NO_DELAY");
-    HANDLE_UV_ERROR(uv_tcp_keepalive(&server, 1, 60), "Failed to set TCP KeepAlive");
-    HANDLE_UV_ERROR(uv_tcp_simultaneous_accepts(&server, 1), "Failed to set TCP Simultaneous Accepts");
-
-    HANDLE_UV_ERROR(uv_tcp_bind(&server, (const sockaddr_t *)&addr, 0), "Server bind failed");
-    HANDLE_UV_ERROR(uv_listen((uv_stream_t *)&server, 1000, on_new_connection), "Server listen failed");
     HANDLE_UV_ERROR(uv_run(loop, UV_RUN_DEFAULT), "Loop run failed");
 
     cleanup(loop);
@@ -76,36 +54,21 @@ error:
     return 1;
 }
 
-void on_uv_close(uv_handle_t *handle)
-{
-    switch (handle->type)
-    {
-    case UV_TIMER:
-        HANDLE_UV_ERROR(uv_timer_stop((uv_timer_t *)handle), "Timer stop failed");
-        printf("Timer closed\n");
-        break;
-    case UV_SIGNAL:
-        HANDLE_UV_ERROR(uv_signal_stop((uv_signal_t *)handle), "Signal stop failed");
-        printf("Signal closed\n");
-        break;
-    case UV_TCP:
-        uv_close(handle, NULL);
-        printf("TCP closed\n");
-        break;
-    default:
-        printf("Unknown handle type: %d\n", handle->type);
-        break;
-    }
-error:
-}
-
-void on_uv_walk(uv_handle_t *handle, void *arg)
+static void on_uv_walk(uv_handle_t *handle, void *arg)
 {
     UNUSED(arg);
-    uv_close(handle, on_uv_close);
+    uv_close(handle, NULL);
+
+    switch (handle->type)
+    {
+    case UV_TCP:
+        free((uv_tcp_t *)handle);
+        break;
+    default:
+    }
 }
 
-void on_signal_handler(uv_signal_t *handle, int signum)
+static void on_signal_handler(uv_signal_t *handle, int signum)
 {
     UNUSED(signum);
     HANDLE_UV_ERROR(uv_signal_stop(handle), "Loop stop failed");
@@ -116,26 +79,4 @@ void on_signal_handler(uv_signal_t *handle, int signum)
 error:
     cleanup(handle->loop);
     exit(1);
-}
-
-void on_new_connection(uv_stream_t *server, int status)
-{
-    if (status < 0)
-    {
-        fprintf(stderr, "New connection error %s\n", uv_strerror(status));
-        return;
-    }
-
-    uv_tcp_t *client = malloc(sizeof(uv_tcp_t));
-
-    HANDLE_UV_ERROR(uv_tcp_init(server->loop, client), "Client init failed");
-    HANDLE_UV_ERROR(uv_accept(server, (uv_stream_t *)client), "Accept failed");
-
-    printf("New connection\n");
-    // uv_read_start((uv_stream_t *)client, alloc_buffer, echo_read);
-
-error:
-    uv_tcp_close_reset(client, NULL);
-    uv_close((uv_handle_t *)client, NULL);
-    free(client);
 }
