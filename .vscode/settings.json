@@ -19,6 +19,14 @@
         "config.h": "c",
         "signal.h": "c",
         "mimalloc-override.h": "c",
-        "mimalloc.h": "c"
+        "mimalloc.h": "c",
+        "type_traits": "cpp",
+        "limits": "cpp",
+        "ratio": "cpp",
+        "tuple": "cpp",
+        "variant": "cpp",
+        "__bit_reference": "cpp",
+        "string": "cpp",
+        "string_t.h": "c"
     }
 }

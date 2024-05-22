@@ -1,3 +1,4 @@
+#include <parser.h>
 #include <pch.h>
 #include <tcp.h>
 
@@ -50,12 +51,13 @@ error:
 static void allocate_buffer(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
 {
     UNUSED(handle);
-    buf->base = malloc(buf->len);
+    buf->base = malloc(suggested_size);
     buf->len = suggested_size;
 }
 
 static void on_client_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *buf)
 {
+    UNUSED(buf);
     uv_write_t *write_req = NULL;
     uv_buf_t write_buf = {0};
 
@@ -65,7 +67,18 @@ static void on_client_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *b
         goto error;
     }
 
-    printf("%s\n", buf->base);
+    redis_parser_t parser = new_parser(buf->base, nread);
+    redis_command_t cmd = parse_command(&parser);
+
+    switch (cmd.type)
+    {
+    case REDIS_COMMAND_PING:
+        write_buf.base = (char *)"+PONG\r\n";
+        write_buf.len = sizeof("+PONG\r\n") - 1;
+        break;
+    default:
+        break;
+    }
 
     write_req = malloc(sizeof(uv_write_t));
 
@@ -74,15 +87,11 @@ static void on_client_read(uv_stream_t *stream, ssize_t nread, const uv_buf_t *b
 
     HANDLE_UV_ERROR(uv_write(write_req, stream, &write_buf, 1, NULL), "Failed to write to client");
 
+    free(buf->base);
     return;
 error:
     uv_close((uv_handle_t *)stream, NULL);
     free(buf->base);
-
-    if (write_buf.base != NULL)
-    {
-        free(write_buf.base);
-    }
     if (write_req != NULL)
     {
         free(write_req);
